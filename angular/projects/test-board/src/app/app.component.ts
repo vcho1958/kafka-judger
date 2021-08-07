@@ -1,15 +1,17 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environments/environment';
-import { map } from 'rxjs/operators'
-import * as io from 'socket.io-client';
+import { io, Socket } from "socket.io-client";
+
 interface Result {
   _id: String,
   offset: String,
   complete: Boolean,
   message: String,
 }
-
+interface semiObject {
+  [key: string]: any
+}
 export interface Response<T> {
   success: boolean;
   status: number;
@@ -27,11 +29,61 @@ export interface Response<T> {
 
 export class AppComponent {
   results: Array<Result> = [];
+  socket: Socket;
+  indexArray: semiObject = {};
+  changeDetected: Boolean = false;
   constructor(private http: HttpClient) {
-    http.get<Array<Result>>(`${environment.baseURL}/result`).subscribe(res => { this.results = res;});
+    this.socket = io("http://localhost:3000", {
+  withCredentials: true,
+});
+    http.get<Array<Result>>(`${environment.baseURL}/result`).subscribe(res => {
+    this.results = res;
+      this.results.forEach((v, i) => {
+        let index = `${v._id}`
+        this.indexArray[index] = i;
+    })
+    this.socket.on('judge-started', (_id) => {
+      this.changeDetected = true; //
+      this.results[this.indexArray[_id]].message = '채점 중'
+      this.changeDetected = false;
+    })
+    this.socket.on('judge-doing', (_id, message) => {
+      this.changeDetected = true;
+      this.results[this.indexArray[_id]].message = message;
+      this.changeDetected = false;
+    })
+    this.socket.on('judge-ended', (_id, message) => {
+      this.changeDetected = true;
+      this.results[this.indexArray[_id]].complete = true;
+      this.results[this.indexArray[_id]].message = message;
+      this.socket.emit('disconnect-request', _id);
+      this.changeDetected = false;
+    })
+    });//객체 내부 값이므로 외부 변수 changDetected로 변화를 주어 뷰 새로고침
+    //doCheck()에서 할 수도 있으나 그러면 불필요하게 매번 배열 전체를 순환해야해서 퍼포먼스에 좋지 않을 수 있다고 판단했음
   }
-
-  addPost(result: Result) {
-    this.http.post<Response<Result>>(`${environment.baseURL}/judge`, result).subscribe(res=> this.results.push(res.data));
+  ngOnInit() {
+    this.results.forEach((v,i) => {
+      if (!v.complete) {
+        this.socket.emit('web-request', v._id)
+      }
+    })
+  }
+  ngOnDestroy() {
+    this.socket.emit('disconnect');
+  }
+  addPost() {
+    this.http.post<any>(`${environment.baseURL}/judge`,{}).subscribe(res => {
+      if (res._id) {
+        this.changeDetected = true;
+        this.results.push(res);
+        this.socket.emit('web-request', res._id);
+        this.changeDetected = false;
+      }
+      else {
+        alert(res);
+      }
+      }
+    );
   }
 }

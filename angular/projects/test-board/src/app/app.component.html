@@ -1,11 +1,12 @@
 <table border="1">
   <caption>게시판</caption>
   <tr>
-    <th>제목</th>
-    <th>내용</th>
+    <th>오프셋</th>
+    <th>메세지</th>
   </tr>
-  <tr *ngFor="let post of this.posts">
-    <td>{{post.title}}</td>
-    <td>{{post.content}}</td>
+  <tr *ngFor="let result of this.results">
+    <td>{{result._id}}</td>
+    <td>{{result.message}}</td>
   </tr>
 </table>
+<button mat-raised-button onclick="addPost()">요청</button>

@@ -2,6 +2,7 @@ FROM node:14.17.3 AS build
 RUN mkdir -p /app
 COPY . /app
 WORKDIR /app
+RUN npm install -g npm
 RUN npm install --save
 RUN npm run build
 

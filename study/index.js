@@ -2,41 +2,31 @@ const asyncHandler = require('express-async-handler');
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
-const io = require("socket.io")(http);
+const io = require("socket.io")(http, {
+  cors: {
+    origin: "http://localhost:4500",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});;
 
 const { Result } = require('./mongo')
 const { Kafka } = require('kafkajs')
 
-http.listen(3000, asyncHandler(async () => {
-  const kafka = new Kafka({
-    clientId: 'my-app',
-    brokers: ['kafka:9092'],
-    retry: {
-      initialRetryTime: 100,
-      retries: 8
-    }
-  })
-
-  const producer = kafka.producer()
-  await producer.connect()
-
-}));
-
-
-
-
-
 
 app.post('/judge', asyncHandler(async (req, res) => {
-
-  const { offset, errorCode } = await producer.send({
+  const document = await Result.create({ offset: offset });
+  const { errorCode } = await producer.send({
     topic: 'test-topic',
     messages: [
-      { value: 'Hello KafkaJS user!' },
+      //{ key:  } 나중에 Java나 코틀린 등 컴파일러별로 분화하여 작성해도 좋을 것 같습니다.
+      { value: document._id },
     ],
   })
-  await Result.create({ offset: offset });
-  if (+errorCode) next(errorCode); //https://kafka.apache.org/0100/protocol.html#protocol_error_codes
+
+  if (+errorCode) {
+    res.send(errorCode)//https://kafka.apache.org/0100/protocol.html#protocol_error_codes
+  };
 
   res.send(res);
   // document.offset = offset
@@ -61,11 +51,11 @@ app.get('/result', asyncHandler(async (req, res) => {
   res.send(documents);
 }))
 
+app.use(async (req, res) => { res.send(errorCode) });
 
 io.sockets.on('connection', function (socket) {
   //사실상 채점현황 전용입니다.
-  //굳이 kafka에서 처리했던 offset이름인 room에 들어가게하는 이유는
-  //나중에 채점정보관련 모델을 구성했을 때 offset을 프로퍼티에 지정하고
+  //굳이 _id인 room에 들어가게하는 이유는
   //웹 클라이언트측이 채점현황 게시판에 접속해 채점현황을 http요청으로 불러왔을 때 
   //완료된 상태(오류, 혹은 정답)가 아닌 경우 해당 offset인 room에
   //web-client측이 join할 수 있게 하기 위함임
@@ -77,11 +67,11 @@ io.sockets.on('connection', function (socket) {
     const document = await Result.findById(_id);
     document.message = '채점 중'
     await document.save();
-    socket.to(offset).emit('judge-started')
+    socket.to(_id).emit('judge-started', _id) //웹 클라쪽에서 식별할 수 있도록 _id도 전송
   }))
-  socket.on('doing-judge', (offset, message) => {
+  socket.on('doing-judge', (_id, message) => {
     //추후 채점과정 추가시 consumer(judger)측에서 일정 주기로 input파일 실행한 수/전체 개수 * 100 (%)를 메세지로 보냄
-    socket.to(offset).emit('judge-doing', message)
+    socket.to(_id).emit('judge-doing', _id, `${message}%`)
   })
   socket.on('judge-end', asyncHandler(async (_id, message) => {
     //정상종료 혹은 에러메세지를 consumer(judger)측에서 보냄
@@ -89,18 +79,37 @@ io.sockets.on('connection', function (socket) {
     document.complete = true;
     document.message = message;
     await document.save()
-    await socket.to(offset).emit('judge-ended', message)
-    //웹 클라이언트 측에서 이 메세지를 받아서 표시중인 메세지를 업데이트한다.
-    /*const sockets = await io.in(offset).fetchSockets();
-    //해당 채점결과를 한 두명이 보고 있는게 아닐 수 있으므로
-    //소켓 연결을 끊는다.
-    for (let socket of sockets) {
-      socket.leave(offset);
-    }*/
-    //생각해보니 클라이언트가 단말이니 클라이언트 측에서 수신하고 클라이언트 측이 끄는 게 맞는 것 같습니다.
+    await socket.to(_id).emit('judge-ended', _id, message)
   }))
-
+  socket.on('disconnect-request', asyncHandler(async (socket, _id) => socket.leave(_id)));
+  //웹쪽에서 완료메세지 수신 후 요청을 보내면 해당 소켓을 룸에서 제외
 })
+
+
+
+
+
+http.listen(3000, asyncHandler(async () => {
+  const kafka = new Kafka({
+    clientId: 'my-app',
+    brokers: ['kafka:9092'],
+    retry: {
+      initialRetryTime: 100,
+      retries: 8
+    }
+  })
+
+  const producer = kafka.producer()
+  await producer.connect()
+
+}));
+
+
+
+
+
+
+
 
 
 
