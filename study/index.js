@@ -1,6 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const app = express();
+const app = require('./app');
 const http = require('http').createServer(app);
 const io = require("socket.io")(http, {
   cors: {
@@ -10,48 +9,9 @@ const io = require("socket.io")(http, {
   }
 });;
 
-const { Result } = require('./mongo')
-const { Kafka } = require('kafkajs')
 
 
-app.post('/judge', asyncHandler(async (req, res) => {
-  const document = await Result.create({ offset: offset });
-  const { errorCode } = await producer.send({
-    topic: 'test-topic',
-    messages: [
-      //{ key:  } 나중에 Java나 코틀린 등 컴파일러별로 분화하여 작성해도 좋을 것 같습니다.
-      { value: document._id },
-    ],
-  })
 
-  if (+errorCode) {
-    res.send(errorCode)//https://kafka.apache.org/0100/protocol.html#protocol_error_codes
-  };
-
-  res.send(res);
-  // document.offset = offset
-  //document.save()
-
-  /*적재 성공 시 RecordMetadata = {
-  topicName: string
-  partition: number
-  errorCode: number
-  offset ?: string
-  timestamp ?: string
-  baseOffset ?: string
-  logAppendTime ?: string
-  logStartOffset ?: string
-} 이런 객체가 반환 됨*/
-
-
-}))
-
-app.get('/result', asyncHandler(async (req, res) => {
-  const documents = await Result.find();
-  res.send(documents);
-}))
-
-app.use(async (req, res) => { res.send(errorCode) });
 
 io.sockets.on('connection', function (socket) {
   //사실상 채점현황 전용입니다.
@@ -86,25 +46,7 @@ io.sockets.on('connection', function (socket) {
 })
 
 
-
-
-
-http.listen(3000, asyncHandler(async () => {
-  const kafka = new Kafka({
-    clientId: 'my-app',
-    brokers: ['kafka:9092'],
-    retry: {
-      initialRetryTime: 100,
-      retries: 8
-    }
-  })
-
-  const producer = kafka.producer()
-  await producer.connect()
-
-}));
-
-
+http.listen(3000, console.log);
 
 
 

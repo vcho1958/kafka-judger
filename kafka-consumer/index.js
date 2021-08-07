@@ -7,7 +7,7 @@ const socket = io("http://localhost:3000", {
 const kafka = new Kafka({
   logLevel: logLevel.INFO,
   brokers: [`kafka:9092`],
-  clientId: 'example-consumer',
+  clientId: `${process.env.HOSTNAME}`,
 })
 
 
@@ -29,6 +29,9 @@ async function run() {
         socket.emit('disconnect');
       }, 5000)
     },
-  })
+  }).catch(async () => {
+    await consumer.disconnect()
+    process.exit(0)
+  });
 }
 run()

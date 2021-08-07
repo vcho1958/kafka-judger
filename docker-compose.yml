@@ -50,8 +50,7 @@ services:
     build:
       context: kafka-consumer
     deploy:
-      replicas: 2
-    restart: always
+      replicas: 3
     depends_on:
       - kafka
     links:

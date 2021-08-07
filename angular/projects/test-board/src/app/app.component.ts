@@ -5,7 +5,6 @@ import { io, Socket } from "socket.io-client";
 
 interface Result {
   _id: String,
-  offset: String,
   complete: Boolean,
   message: String,
 }

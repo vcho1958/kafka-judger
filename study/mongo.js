@@ -14,11 +14,6 @@ const connection = mongoose.createConnection('mongodb://mongo/test', options);
 const models = {};
 
 const result = new mongoose.Schema({
-  offset: {
-    type: String,
-    require: true,
-    index: true,
-  },
   complete: {
     type: Boolean,
     default: false,
