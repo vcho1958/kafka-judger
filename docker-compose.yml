@@ -1,0 +1,35 @@
+version: "3.8"
+services:
+  node:
+    build:
+      context: study
+    container_name: "app"
+    links:
+      - mongo
+    restart: always
+    container_name: "api"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+    links:
+      - kafka
+  mongo:
+    image: mongo
+    restart: always
+    volumes:
+      - /data/db:/data/db --user 1000
+    container_name: "mongo"
+    ports:
+      - "27017:27017"
+  angular:
+    build:
+      context: angular
+    container_name: "angular"
+    links:
+      - api
+    restart: always
+    ports:
+      - "4500:4500"
+    depends_on:
+      - api

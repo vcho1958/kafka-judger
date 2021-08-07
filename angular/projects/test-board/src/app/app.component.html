@@ -1,0 +1,11 @@
+<table border="1">
+  <caption>게시판</caption>
+  <tr>
+    <th>제목</th>
+    <th>내용</th>
+  </tr>
+  <tr *ngFor="let post of this.posts">
+    <td>{{post.title}}</td>
+    <td>{{post.content}}</td>
+  </tr>
+</table>
