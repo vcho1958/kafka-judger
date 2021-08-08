@@ -3,10 +3,12 @@
   <tr>
     <th>오프셋</th>
     <th>메세지</th>
+    <th>처리host</th>
   </tr>
   <tr *ngFor="let result of this.results">
-    <td>{{result._id}}</td>
-    <td>{{result.message}}</td>
+    <td>{{result?._id}}</td>
+    <td>{{result?.message}}</td>
+    <td>{{result?.host}}</td>
   </tr>
 </table>
 <button mat-raised-button (click)="addPost()">요청</button>

@@ -7,6 +7,7 @@ interface Result {
   _id: String,
   complete: Boolean,
   message: String,
+  host: String
 }
 interface semiObject {
   [key: string]: any
@@ -44,17 +45,22 @@ export class AppComponent {
     this.socket.on('judge-started', (_id) => {
       this.changeDetected = true; //
       this.results[this.indexArray[_id]].message = '채점 중'
+      console.log(this.results, this.indexArray[_id]);
       this.changeDetected = false;
     })
-    this.socket.on('judge-doing', (_id, message) => {
+    this.socket.on('judge-doing', (_id, message, host) => {
       this.changeDetected = true;
       this.results[this.indexArray[_id]].message = message;
+      this.results[this.indexArray[_id]].host = host;
+      console.log(this.results, this.indexArray[_id]);
       this.changeDetected = false;
     })
     this.socket.on('judge-ended', (_id, message) => {
       this.changeDetected = true;
+      console.log(this.results, this.indexArray, this.indexArray[_id]);
       this.results[this.indexArray[_id]].complete = true;
       this.results[this.indexArray[_id]].message = message;
+      console.log(this.results, this.indexArray[_id]);
       this.socket.emit('disconnect-request', _id);
       this.changeDetected = false;
     })
@@ -75,6 +81,9 @@ export class AppComponent {
     this.http.post<any>(`${environment.baseURL}/judge`,{}).subscribe(res => {
       if (res._id) {
         this.changeDetected = true;
+        res.host = undefined;
+        let index = `${res._id}`
+        this.indexArray[index] = this.results.length;
         this.results.push(res);
         this.socket.emit('web-request', res._id);
         this.changeDetected = false;

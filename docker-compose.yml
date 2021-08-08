@@ -53,6 +53,7 @@ services:
       replicas: 3
     depends_on:
       - kafka
+      - api
     links:
       - kafka
     networks:

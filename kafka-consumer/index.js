@@ -1,14 +1,13 @@
 const { Kafka, logLevel } = require('kafkajs')
 const io = require("socket.io-client");
-const socket = io("http://localhost:3000", {
-  withCredentials: true,
-});
+const socket = io('http://api:3000');
 
 const kafka = new Kafka({
   logLevel: logLevel.INFO,
   brokers: [`kafka:9092`],
   clientId: `${process.env.HOSTNAME}`,
 })
+
 
 
 const topic = 'test-topic'
@@ -18,19 +17,25 @@ async function run() {
   await consumer.subscribe({ topic, fromBeginning: false })
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
+      const value = message.value.toString()
+      console.log(value);
       let start = new Date();
-      socket.emit('judge-start', message.value)
+      socket.emit('judge-start', value)
       timerId = setInterval(() => {
-        socket.emit('doing-judge', message.value, (new Date() - start) / 50);
+        socket.emit('doing-judge', value, (new Date() - start) / 50, process.env.HOSTNAME);
+        console.log('dj' + (new Date() - start) / 50);
       }, 500);//나중에 채점 부분 들어감
       setTimeout(() => {
         clearInterval(timerId);
-        socket.emit('judge-end', message.value, '성공!')
-        socket.emit('disconnect');
+        socket.emit('judge-end', value, '성공!')
+        console.log('je' + value + '성공');
       }, 5000)
+
+
     },
   }).catch(async () => {
     await consumer.disconnect()
+    socket.disconnect();
     process.exit(0)
   });
 }
