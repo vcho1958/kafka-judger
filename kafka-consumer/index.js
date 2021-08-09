@@ -28,6 +28,7 @@ async function run() {
       }, 500);//나중에 채점 부분 들어감
       setTimeout(() => {
         clearInterval(A[value]);
+        delete A[value];
         socket.emit('judge-end', value, '성공!')
         console.log('je' + value + '성공');
       }, 5000)
