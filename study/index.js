@@ -46,9 +46,11 @@ io.on('connection', function (socket) {
     document.message = message;
     await document.save()
     await socket.to(_id).emit('judge-ended', _id, message)
+    await socket.emit('judge-end', _id);
   }))
-  socket.on('disconnect-request', asyncHandler(async (socket, _id) => socket.leave(_id)));
+  socket.on('disconnect-request', asyncHandler(async (_id) => socket.leave(_id)));
   //웹쪽에서 완료메세지 수신 후 요청을 보내면 해당 소켓을 룸에서 제외
+
 })
 
 

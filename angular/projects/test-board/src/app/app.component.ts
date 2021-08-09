@@ -82,6 +82,7 @@ export class AppComponent {
       if (res._id) {
         this.changeDetected = true;
         res.host = undefined;
+        res.message = '대기 중'
         let index = `${res._id}`
         this.indexArray[index] = this.results.length;
         this.results.push(res);
